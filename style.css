@@ -1,0 +1,9 @@
+/* Small custom UI refinements */
+      body { background: #f8f9fa; }
+      .product-card { transition: box-shadow .15s ease; }
+      .product-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+      .cart-empty { color: #6c757d; }
+      .price { font-weight: 600; }
+      .muted-small { font-size: .9rem; color: #6c757d; }
+      .qty-input { width: 68px; }
+      .strike { text-decoration: line-through; color: #6c757d; }
