@@ -1,3 +1,6 @@
+// ==========================
+// DOM ELEMENTS
+// ==========================
 const addToCartBtns = document.querySelectorAll(".add-to-cart");
 const cartTableWrap = document.querySelector("#cart-table-wrap");
 const cartItems = document.querySelector("#cart-items");
@@ -11,17 +14,24 @@ const discountEl = document.querySelector("#discount");
 const couponCodeEl = document.querySelector("#coupon-code");
 const applyCouponBtn = document.querySelector("#apply-coupon");
 
-const cart = {};
-let couponApplied = false;
-let discountAmount = 0;
+let totalValue = 0;
 
-// --- ADD TO CART ---
+// ==========================
+// IN-MEMORY CART OBJECT
+// ==========================
+// Structure: { id: { name, price, qty } }
+const cart = {};
+
+// ==========================
+// ADD TO CART
+// ==========================
 addToCartBtns.forEach((button) => {
   button.addEventListener("click", () => {
     const id = button.dataset.id;
     const name = button.dataset.name;
     const price = Number(button.dataset.price);
 
+    // Increment quantity if item already exists
     if (!cart[id]) {
       cart[id] = { name, price, qty: 1 };
     } else {
@@ -32,10 +42,11 @@ addToCartBtns.forEach((button) => {
   });
 });
 
-// --- RENDER CART ---
+// ==========================
+// RENDER CART
+// ==========================
 function renderCart() {
-  cartItems.innerHTML = "";
-
+  cartItems.innerHTML = ""; // clear existing rows
   let subTotalValue = 0;
 
   for (const id in cart) {
@@ -47,7 +58,7 @@ function renderCart() {
       "beforeend",
       `
       <tr data-id="${id}">
-        <td>${item.name}</td>      
+        <td>${item.name}</td>
         <td class="text-end">
           <div class="d-inline-flex align-items-center gap-1">
             <button class="btn btn-sm btn-outline-secondary decrease">−</button>
@@ -57,41 +68,38 @@ function renderCart() {
         </td>
         <td class="text-end">₱${itemTotal.toFixed(2)}</td>
       </tr>
-      `
+    `
     );
   }
 
-  // --- Calculate totals ---
-  let discountedSubtotal = subTotalValue - discountAmount;
-  if (discountedSubtotal < 0) discountedSubtotal = 0;
+  // Calculate totals
+  const taxValue = subTotalValue * 0.12;
+  const shippingValue = subTotalValue === 0 ? 0 : subTotalValue <= 100 ? 55 : 110;
+  totalValue = subTotalValue + taxValue + shippingValue;
 
-  const taxValue = discountedSubtotal * 0.12;
-  const shippingValue =
-    discountedSubtotal === 0 ? 0 : discountedSubtotal <= 100 ? 55 : 110;
-  const totalValue = discountedSubtotal + taxValue + shippingValue;
-
+  // Update DOM
   subtotalEl.textContent = `₱${subTotalValue.toFixed(2)}`;
   taxEl.textContent = `₱${taxValue.toFixed(2)}`;
   shippingEl.textContent = `₱${shippingValue.toFixed(2)}`;
   totalEl.textContent = `₱${totalValue.toFixed(2)}`;
 
+  // Show/Hide cart table
   if (subTotalValue === 0) {
     cartTableWrap.classList.add("d-none");
     cartEmptyMessage.classList.remove("d-none");
-    discountContainer.classList.add("d-none");
-    couponApplied = false;
-    discountAmount = 0;
+    discountContainer.classList.add("d-none"); // hide discount if cart empty
   } else {
     cartTableWrap.classList.remove("d-none");
     cartEmptyMessage.classList.add("d-none");
   }
 }
 
-// --- HANDLE CART BUTTONS (+ / −) ---
+// ==========================
+// HANDLE CART ITEM BUTTONS (+ / −)
+// ==========================
 cartItems.addEventListener("click", (e) => {
   const row = e.target.closest("tr");
   if (!row) return;
-
   const id = row.dataset.id;
   if (!id) return;
 
@@ -99,33 +107,28 @@ cartItems.addEventListener("click", (e) => {
     cart[id].qty++;
   } else if (e.target.classList.contains("decrease")) {
     cart[id].qty--;
-    if (cart[id].qty <= 0) delete cart[id];
+    if (cart[id].qty <= 0) delete cart[id]; // remove from cart if qty = 0
   }
 
   renderCart();
 });
 
-// --- APPLY COUPON ---
+// ==========================
+// APPLY COUPON
+// ==========================
 applyCouponBtn.addEventListener("click", () => {
-  const couponCode = couponCodeEl.value.toLowerCase().trim();
-
-  if (couponApplied) {
-    alert("Coupon already applied!");
-    return;
-  }
+  const couponCode = couponCodeEl.value.trim().toLowerCase();
 
   if (couponCode === "anniv10") {
-    // 10% discount applied to subtotal
-    discountAmount = Object.values(cart).reduce(
-      (sum, item) => sum + item.price * item.qty,
-      0
-    ) * 0.1;
+    const discountAmount = totalValue * 0.1;
+    totalValue -= discountAmount;
 
+    totalEl.textContent = `₱${totalValue.toFixed(2)}`;
     discountContainer.classList.remove("d-none");
     discountEl.textContent = `-₱${discountAmount.toFixed(2)}`;
-    couponApplied = true;
-    renderCart();
   } else {
-    alert("Invalid coupon code!");
+    // invalid coupon resets discount
+    discountContainer.classList.add("d-none");
+    renderCart();
   }
 });
